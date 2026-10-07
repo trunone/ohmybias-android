@@ -36,6 +36,7 @@ class KeyboardView(context: Context) : ViewGroup(context) {
         set(value) {
             if (field == value) return
             field = value
+            isShifted = false
             reloadKeys()
         }
     var isShifted = false
