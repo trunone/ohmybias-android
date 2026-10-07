@@ -901,6 +901,6 @@ class InputEngine(
         if (best.length < _composing.length) best else null
     }
 
-    private fun notifyComposing() { delegate?.engineDidUpdateComposing(_composing) }
+    private fun notifyComposing() { delegate?.engineDidUpdateComposing(_composing.uppercase()) }
     private fun notifyCandidates() { delegate?.engineDidUpdateCandidates(_currentCandidates) }
 }
