@@ -109,6 +109,11 @@ object Prefs : IMEPreferences {
         get() = sp.getBoolean("uppercaseLettersInChinese", false)
         set(v) = sp.edit().putBoolean("uppercaseLettersInChinese", v).apply()
 
+    /// 蝦米模式組字時隱藏不可能為下一個字根的按鍵
+    override var hideImpossibleKeys: Boolean
+        get() = sp.getBoolean("hideImpossibleKeys", false)
+        set(v) = sp.edit().putBoolean("hideImpossibleKeys", v).apply()
+
     /// 按鍵觸覺回饋
     var hapticFeedback: Boolean
         get() = sp.getBoolean("hapticFeedback", true)

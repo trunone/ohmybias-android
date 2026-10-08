@@ -19,6 +19,8 @@ interface IMEPreferences {
     val homophoneMultiReading: Boolean
     /// 中文（米）模式字母鍵與組字區是否顯示大寫
     val uppercaseLettersInChinese: Boolean
+    /// 蝦米模式組字時是否隱藏不可能為下一個字根的按鍵
+    val hideImpossibleKeys: Boolean
 }
 
 /// 預設偏好單例 — Android 啟動時由 Prefs 層替換 backing；JVM 測試用預設值。
@@ -40,6 +42,7 @@ object DefaultPreferences : IMEPreferences {
     override val punctuationPairing get() = backing?.punctuationPairing ?: true
     override val homophoneMultiReading get() = backing?.homophoneMultiReading ?: false
     override val uppercaseLettersInChinese get() = backing?.uppercaseLettersInChinese ?: false
+    override val hideImpossibleKeys get() = backing?.hideImpossibleKeys ?: false
 
     /// 聯想總開關寫入（`,,SG` 指令）— Android 層掛上 setter
     var setSuggestEnabled: (Boolean) -> Unit = {}

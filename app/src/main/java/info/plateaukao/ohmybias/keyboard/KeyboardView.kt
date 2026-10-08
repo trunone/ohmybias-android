@@ -116,12 +116,14 @@ class KeyboardView(context: Context) : ViewGroup(context) {
 
     /// 依有效下一按鍵集合（validNextKeys）過濾/隱藏不可能為下一個字根的按鍵。
     /// 當 validNextKeys == null 時，表示非組字狀態（或非蝦米模式），全數顯示。
+    /// 僅在 Prefs.hideImpossibleKeys 為 true 時執行隱藏。
     fun setValidNextKeys(validNextKeys: Set<Char>?) {
+        val hideEnabled = Prefs.hideImpossibleKeys
         for (button in keyButtons) {
             val action = button.spec.action
             if (action is KeyAction.Letter) {
                 val letter = action.ch.lowercase().firstOrNull()
-                if (validNextKeys != null && letter != null && letter in 'a'..'z') {
+                if (hideEnabled && validNextKeys != null && letter != null && letter in 'a'..'z') {
                     if (letter in validNextKeys) {
                         button.visibility = View.VISIBLE
                     } else {
