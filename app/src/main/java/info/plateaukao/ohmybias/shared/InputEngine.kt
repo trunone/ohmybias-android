@@ -903,6 +903,9 @@ class InputEngine(
         if (best.length < _composing.length) best else null
     }
 
-    private fun notifyComposing() { delegate?.engineDidUpdateComposing(_composing.uppercase()) }
+    private fun notifyComposing() {
+        val text = if (prefs.uppercaseLettersInChinese) _composing.uppercase() else _composing
+        delegate?.engineDidUpdateComposing(text)
+    }
     private fun notifyCandidates() { delegate?.engineDidUpdateCandidates(_currentCandidates) }
 }
