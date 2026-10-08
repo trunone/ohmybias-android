@@ -1081,6 +1081,8 @@ class OhMyBiasImeService : InputMethodService(), InputEngineDelegate, HardwareKe
 
     private fun syncPageWithEngine() {
         val kv = keyboardView ?: return
+        // 更新按鍵隱藏/顯示狀態（蝦米組字模式時隱藏不可能為下一個字根的按鍵）
+        kv.setValidNextKeys(engine.validNextKeys())
         // 使用者從工具列開的面板（符號/emoji/顏文字/常用語/123）優先 —— 注音模式是
         // 黏著旗標，不擋掉的話每次按鍵後都會把面板搶回注音頁，面板等於打不開
         if (kv.isShowingToolbarPage) return
@@ -1088,9 +1090,11 @@ class OhMyBiasImeService : InputMethodService(), InputEngineDelegate, HardwareKe
         if (wantZhuyin && kv.currentPage != KeyboardView.PageKind.ZHUYIN) {
             kv.currentPage = KeyboardView.PageKind.ZHUYIN
             kv.reloadKeys()
+            kv.setValidNextKeys(engine.validNextKeys())
         } else if (!wantZhuyin && kv.currentPage == KeyboardView.PageKind.ZHUYIN) {
             kv.currentPage = KeyboardView.PageKind.LETTERS
             kv.reloadKeys()
+            kv.setValidNextKeys(engine.validNextKeys())
         }
     }
 

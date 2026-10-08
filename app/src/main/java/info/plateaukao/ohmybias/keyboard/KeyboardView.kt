@@ -114,6 +114,28 @@ class KeyboardView(context: Context) : ViewGroup(context) {
         if (laidOutSpacingScale != Prefs.keySpacingScale) requestLayout()
     }
 
+    /// 依有效下一按鍵集合（validNextKeys）過濾/隱藏不可能為下一個字根的按鍵。
+    /// 當 validNextKeys == null 時，表示非組字狀態（或非蝦米模式），全數顯示。
+    fun setValidNextKeys(validNextKeys: Set<Char>?) {
+        for (button in keyButtons) {
+            val action = button.spec.action
+            if (action is KeyAction.Letter) {
+                val letter = action.ch.lowercase().firstOrNull()
+                if (validNextKeys != null && letter != null && letter in 'a'..'z') {
+                    if (letter in validNextKeys) {
+                        button.visibility = View.VISIBLE
+                    } else {
+                        button.visibility = View.INVISIBLE
+                    }
+                } else {
+                    button.visibility = View.VISIBLE
+                }
+            } else {
+                button.visibility = View.VISIBLE
+            }
+        }
+    }
+
     fun reloadKeys() {
         builtSkinGeneration = SkinSettings.shared.generation
         builtUppercaseLetters = Prefs.uppercaseLettersInChinese
@@ -277,6 +299,7 @@ class KeyboardView(context: Context) : ViewGroup(context) {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 val target = nearestKey(event.x, event.y) ?: return false
+                if (target.visibility != View.VISIBLE) return false
                 gapTouchTarget = target
                 forwardTouch(target, event)
                 return true
@@ -302,6 +325,7 @@ class KeyboardView(context: Context) : ViewGroup(context) {
         var best: KeyButton? = null
         var bestDist = Float.MAX_VALUE
         for (b1 in keyButtons) {
+            if (b1.visibility != View.VISIBLE) continue
             val dx = max(max(b1.left - x, 0f), x - b1.right)
             val dy = max(max(b1.top - y, 0f), y - b1.bottom)
             val d = dx * dx + dy * dy

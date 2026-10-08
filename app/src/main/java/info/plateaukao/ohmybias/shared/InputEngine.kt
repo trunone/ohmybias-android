@@ -799,8 +799,10 @@ class InputEngine(
 
     private fun canExtendCode(code: String): Boolean = cinTable.validNextKeys(code).isNotEmpty()
 
-    fun validNextKeys(): Set<Char> = sync {
-        if (_composing.isEmpty()) return@sync emptySet()
+    fun validNextKeys(): Set<Char>? = sync {
+        if (_composing.isEmpty() || _isWildcard || _isEnglishMode || _isZhuyinMode || _isPinyinMode || _isSameSoundMode || _isInCommaCommand || _isPinMode) {
+            return@sync null
+        }
         cinTable.validNextKeys(_composing)
     }
 
