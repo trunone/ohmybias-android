@@ -41,6 +41,7 @@ class MockPrefs(
     override var punctuationPairing: Boolean = true,
     override var homophoneMultiReading: Boolean = false,
     override var uppercaseLettersInChinese: Boolean = false,
+    override var hideImpossibleKeys: Boolean = false,
 ) : IMEPreferences {
     override fun domainEnabled(key: String) = true
     override fun domainPriority(key: String) = 0
@@ -341,6 +342,14 @@ class InputEngineTest {
         engine.toggleEnglishMode()
         assertTrue("toggle 後為英文", engine.isEnglishMode)
         assertTrue("toggle 也不顯示 toast（工具列鍵已反映狀態）", mock.toasts.isEmpty())
+    }
+
+    @Test
+    fun testHideImpossibleKeysPreference() {
+        val prefs = MockPrefs()
+        assertFalse("hideImpossibleKeys defaults to false", prefs.hideImpossibleKeys)
+        prefs.hideImpossibleKeys = true
+        assertTrue("hideImpossibleKeys can be set to true", prefs.hideImpossibleKeys)
     }
 
     @Test
