@@ -105,7 +105,7 @@ object Prefs : IMEPreferences {
 
     /// 中文（米）模式字母鍵以大寫顯示 — 嘸蝦米字根表慣用大寫，與實體鍵帽一致；
     /// 只影響鍵面標籤，送出的組字碼不變。英文模式仍依 shift 決定大小寫（同 iOS 鍵名）
-    var uppercaseLettersInChinese: Boolean
+    override var uppercaseLettersInChinese: Boolean
         get() = sp.getBoolean("uppercaseLettersInChinese", false)
         set(v) = sp.edit().putBoolean("uppercaseLettersInChinese", v).apply()
 
