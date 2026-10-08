@@ -40,6 +40,7 @@ class MockPrefs(
     override var regionVariant: String = "tw",
     override var punctuationPairing: Boolean = true,
     override var homophoneMultiReading: Boolean = false,
+    override var uppercaseLettersInChinese: Boolean = false,
 ) : IMEPreferences {
     override fun domainEnabled(key: String) = true
     override fun domainPriority(key: String) = 0
@@ -138,7 +139,7 @@ class InputEngineTest {
         val (engine, mock) = makeEngine()
         engine.handleLetter("a")
         assertEquals("composing after letter", "a", engine.composing)
-        assertEquals("composing update is uppercase", "A", mock.composingUpdates.last())
+        assertEquals("composing update is lowercase when option disabled", "a", mock.composingUpdates.last())
         assertEquals("candidate 日 shown", "日", mock.candidateUpdates.last().firstOrNull())
         engine.handleSpace()
         assertEquals("space commits first candidate", "日", mock.commits.last())
@@ -146,12 +147,21 @@ class InputEngineTest {
     }
 
     @Test
-    fun composingDisplaysUppercaseInBoshiamyMode() {
-        val (engine, mock) = makeEngine()
+    fun composingDisplaysUppercaseInBoshiamyModeWhenEnabled() {
+        val (engine, mock) = makeEngine(MockPrefs(uppercaseLettersInChinese = true))
         engine.handleLetter("a")
         assertEquals("A", mock.composingUpdates.last())
         engine.handleLetter("b")
         assertEquals("AB", mock.composingUpdates.last())
+    }
+
+    @Test
+    fun composingDisplaysLowercaseInBoshiamyModeWhenDisabled() {
+        val (engine, mock) = makeEngine(MockPrefs(uppercaseLettersInChinese = false))
+        engine.handleLetter("a")
+        assertEquals("a", mock.composingUpdates.last())
+        engine.handleLetter("b")
+        assertEquals("ab", mock.composingUpdates.last())
     }
 
     @Test
