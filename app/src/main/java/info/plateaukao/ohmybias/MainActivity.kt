@@ -167,6 +167,7 @@ class MainActivity : Activity() {
         })
         root.addView(hapSeek, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         root.addView(toggle("米模式字母鍵顯示大寫", Prefs.uppercaseLettersInChinese) { Prefs.uppercaseLettersInChinese = it })
+        root.addView(toggle("組字時隱藏不可能按鍵", Prefs.hideImpossibleKeys) { Prefs.hideImpossibleKeys = it })
         root.addView(toggle("隱藏 🌐 鍵（空白鍵加寬）", Prefs.hideGlobeKey) { Prefs.hideGlobeKey = it })
         root.addView(footnote("隱藏後長按工具列「米/英」可開輸入法選單"))
         root.addView(toggle("組字候選時保留工具列", Prefs.keepToolbarWithCandidates) { Prefs.keepToolbarWithCandidates = it })
