@@ -17,8 +17,10 @@ interface IMEPreferences {
     val punctuationPairing: Boolean
     /// 同音字查詢包含多音字的罕見讀音（iOS 為 OhMyBiasPrefs 靜態存取；此處併入協定）
     val homophoneMultiReading: Boolean
-    /// 中文（米）模式字母鍵與組字區是否顯示大寫
+    /// 中文（米）模式字母鍵是否顯示大寫
     val uppercaseLettersInChinese: Boolean
+    /// 中文（米）模式組字區字母是否顯示大寫
+    val uppercaseComposingInChinese: Boolean
 }
 
 /// 預設偏好單例 — Android 啟動時由 Prefs 層替換 backing；JVM 測試用預設值。
@@ -40,6 +42,7 @@ object DefaultPreferences : IMEPreferences {
     override val punctuationPairing get() = backing?.punctuationPairing ?: true
     override val homophoneMultiReading get() = backing?.homophoneMultiReading ?: false
     override val uppercaseLettersInChinese get() = backing?.uppercaseLettersInChinese ?: false
+    override val uppercaseComposingInChinese get() = backing?.uppercaseComposingInChinese ?: false
 
     /// 聯想總開關寫入（`,,SG` 指令）— Android 層掛上 setter
     var setSuggestEnabled: (Boolean) -> Unit = {}

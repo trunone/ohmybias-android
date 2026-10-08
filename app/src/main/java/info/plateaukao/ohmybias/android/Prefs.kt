@@ -109,6 +109,11 @@ object Prefs : IMEPreferences {
         get() = sp.getBoolean("uppercaseLettersInChinese", false)
         set(v) = sp.edit().putBoolean("uppercaseLettersInChinese", v).apply()
 
+    /// 中文（米）模式組字區字母以大寫顯示
+    override var uppercaseComposingInChinese: Boolean
+        get() = sp.getBoolean("uppercaseComposingInChinese", false)
+        set(v) = sp.edit().putBoolean("uppercaseComposingInChinese", v).apply()
+
     /// 按鍵觸覺回饋
     var hapticFeedback: Boolean
         get() = sp.getBoolean("hapticFeedback", true)

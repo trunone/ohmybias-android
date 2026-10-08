@@ -41,6 +41,7 @@ class MockPrefs(
     override var punctuationPairing: Boolean = true,
     override var homophoneMultiReading: Boolean = false,
     override var uppercaseLettersInChinese: Boolean = false,
+    override var uppercaseComposingInChinese: Boolean = false,
 ) : IMEPreferences {
     override fun domainEnabled(key: String) = true
     override fun domainPriority(key: String) = 0
@@ -148,7 +149,7 @@ class InputEngineTest {
 
     @Test
     fun composingDisplaysUppercaseInBoshiamyModeWhenEnabled() {
-        val (engine, mock) = makeEngine(MockPrefs(uppercaseLettersInChinese = true))
+        val (engine, mock) = makeEngine(MockPrefs(uppercaseComposingInChinese = true))
         engine.handleLetter("a")
         assertEquals("A", mock.composingUpdates.last())
         engine.handleLetter("b")
@@ -157,7 +158,7 @@ class InputEngineTest {
 
     @Test
     fun composingDisplaysLowercaseInBoshiamyModeWhenDisabled() {
-        val (engine, mock) = makeEngine(MockPrefs(uppercaseLettersInChinese = false))
+        val (engine, mock) = makeEngine(MockPrefs(uppercaseComposingInChinese = false))
         engine.handleLetter("a")
         assertEquals("a", mock.composingUpdates.last())
         engine.handleLetter("b")
