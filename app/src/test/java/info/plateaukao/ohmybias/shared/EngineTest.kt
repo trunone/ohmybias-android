@@ -332,6 +332,29 @@ class InputEngineTest {
         assertTrue("toggle 後為英文", engine.isEnglishMode)
         assertTrue("toggle 也不顯示 toast（工具列鍵已反映狀態）", mock.toasts.isEmpty())
     }
+
+    @Test
+    fun testValidNextKeysDuringComposing() {
+        val (engine, _) = makeEngine()
+        // 未組字時 validNextKeys 為 null
+        assertEquals("composing 為空時 validNextKeys 為 null", null, engine.validNextKeys())
+
+        // 打 "a"：fixture 內有 a (日), aa (昌), ab (明) → 下一個有效按鍵為 'a', 'b'
+        engine.handleLetter("a")
+        assertEquals("a 的下一按鍵為 a, b", setOf('a', 'b'), engine.validNextKeys())
+
+        // 再打 "b"："ab" 無法再延伸，validNextKeys 應為 emptySet()
+        engine.handleLetter("b")
+        assertEquals("ab 無法再延伸，validNextKeys 為 emptySet", emptySet<Char>(), engine.validNextKeys())
+
+        // 清空
+        engine.handleEscape()
+        assertEquals("Escape 後 composing 為空，validNextKeys 為 null", null, engine.validNextKeys())
+
+        // 切至英文模式：validNextKeys 應為 null
+        engine.setEnglishMode(true)
+        assertEquals("英文模式下 validNextKeys 為 null", null, engine.validNextKeys())
+    }
 }
 
 class SkinSettingsTest {
