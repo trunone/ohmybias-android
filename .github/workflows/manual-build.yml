@@ -1,0 +1,74 @@
+name: Manual Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type (debug / release)'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: 還原簽章金鑰（若有提供 KEYSTORE_B64）
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "KEYSTORE_EXISTS=true" >> "$GITHUB_ENV"
+          else
+            echo "KEYSTORE_EXISTS=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: 測試 + 組 APK (Debug)
+        if: ${{ inputs.build_type == 'debug' }}
+        run: ./gradlew testDebugUnitTest assembleDebug
+
+      - name: 測試 + 組 APK (Release)
+        if: ${{ inputs.build_type == 'release' }}
+        env:
+          OHMYBIAS_KEYSTORE: ${{ runner.temp }}/release.jks
+          OHMYBIAS_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          OHMYBIAS_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          OHMYBIAS_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew testDebugUnitTest assembleRelease
+
+      - name: 準備 APK 檔案名稱與產物
+        id: meta
+        run: |
+          VERSION=$(grep -oE 'versionName = "[^"]+"' app/build.gradle.kts | cut -d'"' -f2)
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          BUILD_TYPE="${{ inputs.build_type }}"
+
+          if [ "$BUILD_TYPE" = "release" ]; then
+            APK_SRC="app/build/outputs/apk/release/app-release.apk"
+          else
+            APK_SRC="app/build/outputs/apk/debug/app-debug.apk"
+          fi
+
+          APK_NAME="ohmybias-v${VERSION}-${BUILD_TYPE}-${SHORT_SHA}.apk"
+          cp "$APK_SRC" "$APK_NAME"
+          echo "apk_name=${APK_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: 上傳 APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.apk_name }}
+          path: ${{ steps.meta.outputs.apk_name }}
+          retention-days: 7
