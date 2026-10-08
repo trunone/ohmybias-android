@@ -138,10 +138,20 @@ class InputEngineTest {
         val (engine, mock) = makeEngine()
         engine.handleLetter("a")
         assertEquals("composing after letter", "a", engine.composing)
+        assertEquals("composing update is uppercase", "A", mock.composingUpdates.last())
         assertEquals("candidate 日 shown", "日", mock.candidateUpdates.last().firstOrNull())
         engine.handleSpace()
         assertEquals("space commits first candidate", "日", mock.commits.last())
         assertEquals("composing cleared after commit", "", engine.composing)
+    }
+
+    @Test
+    fun composingDisplaysUppercaseInBoshiamyMode() {
+        val (engine, mock) = makeEngine()
+        engine.handleLetter("a")
+        assertEquals("A", mock.composingUpdates.last())
+        engine.handleLetter("b")
+        assertEquals("AB", mock.composingUpdates.last())
     }
 
     @Test
