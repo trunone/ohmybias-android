@@ -374,6 +374,42 @@ class InputEngineTest {
         engine.setEnglishMode(true)
         assertEquals("英文模式下 validNextKeys 為 null", null, engine.validNextKeys())
     }
+
+    @Test
+    fun testValidNextKeysWithVRSF() {
+        val (engine, _) = makeEngine()
+        // hj 在 FIXTURE_CIN 中有 2 個候選 (手, 乎)
+        engine.handleLetter("h")
+        engine.handleLetter("j")
+        assertEquals(listOf("手", "乎"), engine.currentCandidates)
+        // hj 無可延伸的下一按鍵，但有第 2 個候選字，故 'v' (選第 2 候選) 應包含在 validNextKeys 中
+        assertEquals(setOf('v'), engine.validNextKeys())
+
+        // 測試 5 個候選字的情況
+        val customCin = """%gen_inp
+%ename Test5
+%cname 測試5
+%selkey 1234567890
+%chardef begin
+x 壹
+x 貳
+x 參
+x 肆
+x 伍
+%chardef end
+"""
+        val path = File(System.getProperty("java.io.tmpdir"), "ohmybias_test_vrsf_${UUID.randomUUID()}.cin")
+        path.writeText(customCin, Charsets.UTF_8)
+        val table = CINTable()
+        table.load(path.path)
+        path.delete()
+
+        val engine5 = InputEngine(cinTable = table, prefs = MockPrefs())
+        engine5.handleLetter("x")
+        assertEquals(5, engine5.currentCandidates.size)
+        // 5 個候選字：v, r, s, f 可分別選擇第 2, 3, 4, 5 個候选字
+        assertEquals(setOf('v', 'r', 's', 'f'), engine5.validNextKeys())
+    }
 }
 
 class SkinSettingsTest {

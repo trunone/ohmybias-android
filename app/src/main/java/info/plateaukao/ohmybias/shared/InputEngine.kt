@@ -803,7 +803,14 @@ class InputEngine(
         if (_composing.isEmpty() || _isWildcard || _isEnglishMode || _isZhuyinMode || _isPinyinMode || _isSameSoundMode || _isInCommaCommand || _isPinMode) {
             return@sync null
         }
-        cinTable.validNextKeys(_composing)
+        val next = cinTable.validNextKeys(_composing).toMutableSet()
+        val vrsfMap = listOf('v' to 1, 'r' to 2, 's' to 3, 'f' to 4)
+        for ((char, idx) in vrsfMap) {
+            if (_currentCandidates.size > idx) {
+                next.add(char)
+            }
+        }
+        next
     }
 
     private fun refreshCandidates() {
