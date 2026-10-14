@@ -166,6 +166,23 @@ class InputEngineTest {
     }
 
     @Test
+    fun reverseLookupDisplaysUppercaseWhenEnabled() {
+        val (engineEnabled, mockEnabled) = makeEngine(MockPrefs(uppercaseLettersInChinese = true, showCodeHint = true))
+        engineEnabled.handleLetter("a")
+        assertEquals("A", engineEnabled.shortestCodeHint("aa"))
+
+        engineEnabled.handleSpace() // commits 日
+        assertTrue("code hint shows uppercase AB", mockEnabled.codeHints.last().contains("A") || mockEnabled.codeHints.last().contains("AB"))
+
+        val (engineDisabled, mockDisabled) = makeEngine(MockPrefs(uppercaseLettersInChinese = false, showCodeHint = true))
+        engineDisabled.handleLetter("a")
+        assertEquals("a", engineDisabled.shortestCodeHint("aa"))
+
+        engineDisabled.handleSpace() // commits 日
+        assertTrue("code hint shows lowercase", mockDisabled.codeHints.last().contains("a"))
+    }
+
+    @Test
     fun pinnedOrder() {
         // 檔案格式：一行一碼、tab 分欄；非 BMP 字原樣一欄
         val parsed = PinnedOrder.parse("hj\t乎\t手\nab\t𠮷\t明\n\n")
