@@ -169,16 +169,18 @@ class InputEngineTest {
     fun reverseLookupDisplaysUppercaseWhenEnabled() {
         val (engineEnabled, mockEnabled) = makeEngine(MockPrefs(uppercaseLettersInChinese = true, showCodeHint = true))
         engineEnabled.handleLetter("a")
-        assertEquals("A", engineEnabled.shortestCodeHint("aa"))
+        engineEnabled.handleLetter("a")
+        assertEquals("A", engineEnabled.shortestCodeHint("日"))
 
-        engineEnabled.handleSpace() // commits 日
+        engineEnabled.handleSpace() // commits 昌
         assertTrue("code hint shows uppercase AB", mockEnabled.codeHints.last().contains("A") || mockEnabled.codeHints.last().contains("AB"))
 
         val (engineDisabled, mockDisabled) = makeEngine(MockPrefs(uppercaseLettersInChinese = false, showCodeHint = true))
         engineDisabled.handleLetter("a")
-        assertEquals("a", engineDisabled.shortestCodeHint("aa"))
+        engineDisabled.handleLetter("a")
+        assertEquals("a", engineDisabled.shortestCodeHint("日"))
 
-        engineDisabled.handleSpace() // commits 日
+        engineDisabled.handleSpace() // commits 昌
         assertTrue("code hint shows lowercase", mockDisabled.codeHints.last().contains("a"))
     }
 
