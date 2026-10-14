@@ -407,7 +407,7 @@ class InputEngine(
         if (_isZhuyinMode) {
             val full = _currentCandidates[at]
             val char = full.substring(0, full.offsetByCodePoints(0, 1))
-            val codes = cinTable.reverseLookup(char)
+            val codes = reverseLookupCodes(char)
             commitText(char)
             if (codes.isNotEmpty()) delegate?.engineDidShowCodeHint("$char → ${codes.joinToString(" / ")}", 3.0)
             clearZhuyinSlots(); _currentCandidates = emptyList(); notifyCandidates()
@@ -416,7 +416,7 @@ class InputEngine(
         } else if (_isSameSoundMode && _sameSoundBase.isNotEmpty()) {
             // 同音字第 2 步：使用者選了同音字
             val char = _currentCandidates[at]
-            val codes = cinTable.reverseLookup(char)
+            val codes = reverseLookupCodes(char)
             delegate?.engineDidCommit(char)
             if (codes.isNotEmpty()) delegate?.engineDidShowCodeHint("$char → ${codes.joinToString(" / ")}", 3.0)
             _sameSoundBase = ""; _composing = ""; _currentCandidates = emptyList()
@@ -521,7 +521,7 @@ class InputEngine(
         val entry = _currentCandidates[at]
         val char = entry.substring(0, entry.offsetByCodePoints(0, 1))
         delegate?.engineDidCommit(char)
-        val codes = cinTable.reverseLookup(char)
+        val codes = reverseLookupCodes(char)
         if (codes.isNotEmpty()) delegate?.engineDidShowToast("$char → ${codes.joinToString(" / ")}")
         _pinyinBuffer = ""; _currentCandidates = emptyList(); notifyCandidates()
         delegate?.engineDidClearComposing()
@@ -555,7 +555,7 @@ class InputEngine(
         if (raw.isEmpty()) return
         val chars = zhuyinLookup.sortByFreq(raw, _prevCommitted, zhuyin)
         _currentCandidates = chars.map { char ->
-            val codes = cinTable.reverseLookup(char)
+            val codes = reverseLookupCodes(char)
             if (codes.isEmpty()) char else "$char ${codes.joinToString("/")}"
         }
         delegate?.engineDidUpdateComposing(zhuyin)
@@ -755,14 +755,14 @@ class InputEngine(
         if (_isZhuyinMode) {
             val full = _currentCandidates[at]
             val char = full.substring(0, full.offsetByCodePoints(0, 1))
-            val codes = cinTable.reverseLookup(char)
+            val codes = reverseLookupCodes(char)
             commitText(char)
             if (codes.isNotEmpty()) delegate?.engineDidShowToast("$char → ${codes.joinToString(" / ")}")
             clearZhuyinSlots(); _currentCandidates = emptyList(); notifyCandidates()
             exitZhuyinModeImpl()
         } else if (_isSameSoundMode && _sameSoundBase.isNotEmpty()) {
             val char = _currentCandidates[at]
-            val codes = cinTable.reverseLookup(char)
+            val codes = reverseLookupCodes(char)
             delegate?.engineDidCommit(char)
             if (codes.isNotEmpty()) delegate?.engineDidShowToast("$char → ${codes.joinToString(" / ")}")
             _sameSoundBase = ""; _composing = ""; _currentCandidates = emptyList()
@@ -789,7 +789,7 @@ class InputEngine(
             display = chars
         }
         _currentCandidates = display.map { c ->
-            val codes = cinTable.reverseLookup(c)
+            val codes = reverseLookupCodes(c)
             if (codes.isEmpty()) c else "$c ${codes.joinToString("/")}"
         }
         _composing = pinyin; notifyComposing(); notifyCandidates()
@@ -877,7 +877,7 @@ class InputEngine(
         notifyCandidates()
 
         if (text.cpCount() == 1 && prefs.showCodeHint && MemoryBudget.canAfford(MemoryBudget.reverseTable)) {
-            val codes = cinTable.reverseLookup(text)
+            val codes = reverseLookupCodes(text)
             if (codes.isNotEmpty()) {
                 val hint = "$text → ${codes.joinToString(" / ")}"
                 val dur = if (_isSameSoundMode || _isZhuyinMode) 3.0 else 1.5
@@ -903,11 +903,17 @@ class InputEngine(
         notifyCandidates()
     }
 
+    private fun reverseLookupCodes(char: String): List<String> {
+        val codes = cinTable.reverseLookup(char)
+        return if (prefs.uppercaseLettersInChinese) codes.map { it.uppercase() } else codes
+    }
+
     /// 回傳候選的最短字根碼提示；與目前 composing 等長或更長時回 null。
     fun shortestCodeHint(forChar: String): String? = sync {
         val codes = cinTable.shortestCodesTable[forChar] ?: return@sync null
         val best = codes.minByOrNull { it.length } ?: return@sync null
-        if (best.length < _composing.length) best else null
+        val formatted = if (prefs.uppercaseLettersInChinese) best.uppercase() else best
+        if (formatted.length < _composing.length) formatted else null
     }
 
     private fun notifyComposing() {
