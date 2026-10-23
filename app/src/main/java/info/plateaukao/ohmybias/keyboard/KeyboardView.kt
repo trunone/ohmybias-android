@@ -38,6 +38,12 @@ class KeyboardView(context: Context) : ViewGroup(context) {
             field = value
             reloadKeys()
         }
+    var isSameSoundMode = false
+        set(value) {
+            if (field == value) return
+            field = value
+            reloadKeys()
+        }
     var isShifted = false
     var needsInputModeSwitchKey = true
     /// Enter 鍵顯示文字（依 host app 的 imeOptions：搜尋/前往/送出…）
@@ -426,13 +432,14 @@ class KeyboardView(context: Context) : ViewGroup(context) {
             swipeDown = swipeEntry(SwipeData.down[s], up = false),
             longPress = if (skin.longPressEnabled) LongPressData.letterMenu(s) else null,
         )
-        // 第三排前導鍵（sweetlime 版面）：中文模式＝「英」切換鍵（若開啟 🌐 切換則改為同音字「同」鍵）、英文模式＝shift
+        // 第三排前導鍵（sweetlime 版面）：中文模式＝「英」切換鍵（若開啟 🌐 切換則改為同音字「同/組」鍵）、英文模式＝shift
         val row3 = mutableListOf<KeySpec>()
         if (isEnglishMode) {
             row3.add(KeySpec(if (isShifted) "⬆" else "⇧", KeyAction.Shift, isSpecial = true))
         } else {
             if (Prefs.globeAsLanguageKey && needsInputModeSwitchKey) {
-                row3.add(KeySpec("同", KeyAction.EnterHomophone, isSpecial = true))
+                val label = if (isSameSoundMode) "組" else "同"
+                row3.add(KeySpec(label, KeyAction.EnterHomophone, isSpecial = true))
             } else {
                 row3.add(KeySpec("英", KeyAction.ToggleLanguage, isSpecial = true))
             }

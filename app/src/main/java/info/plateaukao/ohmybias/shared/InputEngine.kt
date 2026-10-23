@@ -699,13 +699,19 @@ class InputEngine(
             return@sync "注"
         }
         if (name == "to") {
-            if (!_isSameSoundMode) {
+            if (_isSameSoundMode) {
+                _isSameSoundMode = false; _sameSoundBase = ""; _composing = ""
+                _currentCandidates = emptyList(); notifyCandidates()
+                delegate?.engineDidClearComposing()
+                delegate?.engineDidShowToast(currentModeLabelImpl)
+                return@sync currentModeLabelImpl
+            } else {
                 _isSameSoundMode = true; _sameSoundBase = ""; _composing = ""
                 delegate?.engineDidClearComposing()
+                if (_isZhuyinMode) exitZhuyinModeImpl()
+                delegate?.engineDidShowToast("同音字模式")
+                return@sync "同"
             }
-            if (_isZhuyinMode) exitZhuyinModeImpl()
-            delegate?.engineDidShowToast("同音字模式")
-            return@sync "同"
         }
         // 一般輸入模式
         if (_isZhuyinMode) { _isZhuyinMode = false; clearZhuyinSlots(); _currentCandidates = emptyList(); notifyCandidates() }

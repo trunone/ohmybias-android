@@ -11,13 +11,15 @@ class GlobeKeyOptionTest {
         needsInputModeSwitchKey: Boolean,
         globeAsLanguageKey: Boolean,
         isEnglishMode: Boolean,
+        isSameSoundMode: Boolean = false,
         isShifted: Boolean = false
     ): KeyboardView.KeySpec {
         return if (isEnglishMode) {
             KeyboardView.KeySpec(if (isShifted) "⬆" else "⇧", KeyAction.Shift, isSpecial = true)
         } else {
             if (globeAsLanguageKey && needsInputModeSwitchKey) {
-                KeyboardView.KeySpec("同", KeyAction.EnterHomophone, isSpecial = true)
+                val label = if (isSameSoundMode) "組" else "同"
+                KeyboardView.KeySpec(label, KeyAction.EnterHomophone, isSpecial = true)
             } else {
                 KeyboardView.KeySpec("英", KeyAction.ToggleLanguage, isSpecial = true)
             }
@@ -63,7 +65,8 @@ class GlobeKeyOptionTest {
         val row3Spec = createRow3LeadingKeySpec(
             needsInputModeSwitchKey = true,
             globeAsLanguageKey = true,
-            isEnglishMode = false
+            isEnglishMode = false,
+            isSameSoundMode = false
         )
         assertEquals("同", row3Spec.label)
         assertEquals(KeyAction.EnterHomophone, row3Spec.action)
@@ -77,6 +80,18 @@ class GlobeKeyOptionTest {
         assertEquals("英", row4Spec.label)
         assertEquals(KeyAction.ToggleLanguage, row4Spec.action)
         assertFalse(row4Spec.isGlobe)
+    }
+
+    @Test
+    fun row3DisplaysZuWhenHomophoneModeActive() {
+        val row3Spec = createRow3LeadingKeySpec(
+            needsInputModeSwitchKey = true,
+            globeAsLanguageKey = true,
+            isEnglishMode = false,
+            isSameSoundMode = true
+        )
+        assertEquals("組", row3Spec.label)
+        assertEquals(KeyAction.EnterHomophone, row3Spec.action)
     }
 
     @Test

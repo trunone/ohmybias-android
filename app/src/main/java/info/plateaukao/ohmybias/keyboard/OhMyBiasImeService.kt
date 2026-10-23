@@ -1081,6 +1081,7 @@ class OhMyBiasImeService : InputMethodService(), InputEngineDelegate, HardwareKe
 
     private fun syncPageWithEngine() {
         val kv = keyboardView ?: return
+        kv.isSameSoundMode = engine.isSameSoundMode
         // 更新按鍵隱藏/顯示狀態（蝦米組字模式時隱藏不可能為下一個字根的按鍵）
         kv.setValidNextKeys(engine.validNextKeys())
         // 使用者從工具列開的面板（符號/emoji/顏文字/常用語/123）優先 —— 注音模式是
