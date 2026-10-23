@@ -93,7 +93,7 @@ class OhMyBiasImeService : InputMethodService(), InputEngineDelegate, HardwareKe
     private val prefsListener = android.content.SharedPreferences
         .OnSharedPreferenceChangeListener { _, key ->
             when (key) {
-                "keyboardHeightScale", "hardKeyboardMode", "toolbarButtons", "floatingKeyboard" ->
+                "keyboardHeightScale", "hardKeyboardMode", "toolbarButtons", "floatingKeyboard", "globeAsLanguageKey", "hideGlobeKey" ->
                     handler.post { rebuildForHeightChange() }
                 "keySpacingScale" -> handler.post { keyboardView?.requestLayout() }
             }

@@ -57,6 +57,8 @@ class KeyboardView(context: Context) : ViewGroup(context) {
     private var builtSkinGeneration = -1
     /// 建鍵時「中文模式大寫字母」偏好值 — 在設定頁改過後回鍵盤要重建鍵面
     private var builtUppercaseLetters = false
+    /// 建鍵時「地球鍵改為英/米切換鍵」偏好值
+    private var builtGlobeAsLanguageKey = false
     /// 上次排版採用的按鍵間距縮放 — 設定頁改過後回鍵盤要重排（鍵面尺寸會變）
     private var laidOutSpacingScale = -1f
 
@@ -102,6 +104,7 @@ class KeyboardView(context: Context) : ViewGroup(context) {
         if (needsInputModeSwitchKey == needsSwitchKey && returnKeyLabel == newReturnLabel &&
             builtSkinGeneration == SkinSettings.shared.generation &&
             builtUppercaseLetters == Prefs.uppercaseLettersInChinese &&
+            builtGlobeAsLanguageKey == Prefs.globeAsLanguageKey &&
             currentPage != PageKind.PHRASES  // 常用語可能在設定頁被改過 — 回鍵盤時重讀
         ) return
         needsInputModeSwitchKey = needsSwitchKey
@@ -141,6 +144,7 @@ class KeyboardView(context: Context) : ViewGroup(context) {
     fun reloadKeys() {
         builtSkinGeneration = SkinSettings.shared.generation
         builtUppercaseLetters = Prefs.uppercaseLettersInChinese
+        builtGlobeAsLanguageKey = Prefs.globeAsLanguageKey
         removeAllViews()
         keyButtons.clear()
         rowsOfButtons.clear()
@@ -442,7 +446,11 @@ class KeyboardView(context: Context) : ViewGroup(context) {
             row4.add(KeySpec("123", KeyAction.Page(numericPage), isSpecial = true))
         }
         if (needsInputModeSwitchKey) {
-            row4.add(KeySpec("🌐", KeyAction.Globe, widthMultiplier = 1.0f, isSpecial = true, isGlobe = true))
+            if (Prefs.globeAsLanguageKey) {
+                row4.add(KeySpec(if (isEnglishMode) "米" else "英", KeyAction.ToggleLanguage, widthMultiplier = 1.0f, isSpecial = true))
+            } else {
+                row4.add(KeySpec("🌐", KeyAction.Globe, widthMultiplier = 1.0f, isSpecial = true, isGlobe = true))
+            }
         }
         row4.add(KeySpec(",", KeyAction.Letter(","),
             swipeUp = swipeEntry(SwipeData.up[","], up = true),

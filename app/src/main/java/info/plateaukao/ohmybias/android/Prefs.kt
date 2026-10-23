@@ -130,6 +130,11 @@ object Prefs : IMEPreferences {
         get() = sp.getBoolean("hideGlobeKey", false)
         set(v) = sp.edit().putBoolean("hideGlobeKey", v).apply()
 
+    /// 地球 🌐 鍵改為「英/米」切換鍵
+    var globeAsLanguageKey: Boolean
+        get() = sp.getBoolean("globeAsLanguageKey", false)
+        set(v) = sp.edit().putBoolean("globeAsLanguageKey", v).apply()
+
     /// 組字候選時保留工具列：候選改為覆蓋在工具列上（同聯想列），右側留一顆鍵可點。
     /// 預設關 — 候選整條佔滿
     var keepToolbarWithCandidates: Boolean

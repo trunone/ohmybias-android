@@ -170,6 +170,7 @@ class MainActivity : Activity() {
         root.addView(toggle("組字時隱藏不可能按鍵", Prefs.hideImpossibleKeys) { Prefs.hideImpossibleKeys = it })
         root.addView(toggle("隱藏 🌐 鍵（空白鍵加寬）", Prefs.hideGlobeKey) { Prefs.hideGlobeKey = it })
         root.addView(footnote("隱藏後長按工具列「米/英」可開輸入法選單"))
+        root.addView(toggle("🌐 鍵改為「英/米」切換鍵", Prefs.globeAsLanguageKey) { Prefs.globeAsLanguageKey = it })
         root.addView(toggle("組字候選時保留工具列", Prefs.keepToolbarWithCandidates) { Prefs.keepToolbarWithCandidates = it })
         root.addView(footnote("候選列覆蓋在工具列上（同聯想列），右側固定留一顆鍵可點"))
         root.addView(toggle("同音字含罕見讀音", Prefs.homophoneMultiReading) { Prefs.homophoneMultiReading = it })
