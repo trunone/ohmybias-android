@@ -426,12 +426,16 @@ class KeyboardView(context: Context) : ViewGroup(context) {
             swipeDown = swipeEntry(SwipeData.down[s], up = false),
             longPress = if (skin.longPressEnabled) LongPressData.letterMenu(s) else null,
         )
-        // 第三排前導鍵（sweetlime 版面）：中文模式＝「英」切換鍵（shift 位置）、英文模式＝shift
+        // 第三排前導鍵（sweetlime 版面）：中文模式＝「英」切換鍵（若開啟 🌐 切換則改為同音字「同」鍵）、英文模式＝shift
         val row3 = mutableListOf<KeySpec>()
         if (isEnglishMode) {
             row3.add(KeySpec(if (isShifted) "⬆" else "⇧", KeyAction.Shift, isSpecial = true))
         } else {
-            row3.add(KeySpec("英", KeyAction.ToggleLanguage, isSpecial = true))
+            if (Prefs.globeAsLanguageKey && needsInputModeSwitchKey) {
+                row3.add(KeySpec("同", KeyAction.EnterHomophone, isSpecial = true))
+            } else {
+                row3.add(KeySpec("英", KeyAction.ToggleLanguage, isSpecial = true))
+            }
         }
         row3 += r3.map(::key)
         row3.add(KeySpec("⌫", KeyAction.Backspace, widthMultiplier = 1.4f, isSpecial = true))

@@ -7,7 +7,24 @@ import org.junit.Test
 
 class GlobeKeyOptionTest {
 
-    private fun createSwitchKeySpec(
+    private fun createRow3LeadingKeySpec(
+        needsInputModeSwitchKey: Boolean,
+        globeAsLanguageKey: Boolean,
+        isEnglishMode: Boolean,
+        isShifted: Boolean = false
+    ): KeyboardView.KeySpec {
+        return if (isEnglishMode) {
+            KeyboardView.KeySpec(if (isShifted) "⬆" else "⇧", KeyAction.Shift, isSpecial = true)
+        } else {
+            if (globeAsLanguageKey && needsInputModeSwitchKey) {
+                KeyboardView.KeySpec("同", KeyAction.EnterHomophone, isSpecial = true)
+            } else {
+                KeyboardView.KeySpec("英", KeyAction.ToggleLanguage, isSpecial = true)
+            }
+        }
+    }
+
+    private fun createRow4SwitchKeySpec(
         needsInputModeSwitchKey: Boolean,
         globeAsLanguageKey: Boolean,
         isEnglishMode: Boolean
@@ -21,41 +38,65 @@ class GlobeKeyOptionTest {
     }
 
     @Test
-    fun defaultGlobeKeyWhenOptionDisabled() {
-        val spec = createSwitchKeySpec(
+    fun defaultRow3AndRow4KeyWhenOptionDisabled() {
+        val row3Spec = createRow3LeadingKeySpec(
             needsInputModeSwitchKey = true,
             globeAsLanguageKey = false,
             isEnglishMode = false
         )
-        requireNotNull(spec)
-        assertEquals("🌐", spec.label)
-        assertEquals(KeyAction.Globe, spec.action)
-        assertTrue(spec.isGlobe)
+        assertEquals("英", row3Spec.label)
+        assertEquals(KeyAction.ToggleLanguage, row3Spec.action)
+
+        val row4Spec = createRow4SwitchKeySpec(
+            needsInputModeSwitchKey = true,
+            globeAsLanguageKey = false,
+            isEnglishMode = false
+        )
+        requireNotNull(row4Spec)
+        assertEquals("🌐", row4Spec.label)
+        assertEquals(KeyAction.Globe, row4Spec.action)
+        assertTrue(row4Spec.isGlobe)
     }
 
     @Test
-    fun languageToggleKeyWhenOptionEnabledInChineseMode() {
-        val spec = createSwitchKeySpec(
+    fun row3IsHomophoneKeyAndRow4IsLanguageToggleKeyWhenOptionEnabledInChineseMode() {
+        val row3Spec = createRow3LeadingKeySpec(
             needsInputModeSwitchKey = true,
             globeAsLanguageKey = true,
             isEnglishMode = false
         )
-        requireNotNull(spec)
-        assertEquals("英", spec.label)
-        assertEquals(KeyAction.ToggleLanguage, spec.action)
-        assertFalse(spec.isGlobe)
+        assertEquals("同", row3Spec.label)
+        assertEquals(KeyAction.EnterHomophone, row3Spec.action)
+
+        val row4Spec = createRow4SwitchKeySpec(
+            needsInputModeSwitchKey = true,
+            globeAsLanguageKey = true,
+            isEnglishMode = false
+        )
+        requireNotNull(row4Spec)
+        assertEquals("英", row4Spec.label)
+        assertEquals(KeyAction.ToggleLanguage, row4Spec.action)
+        assertFalse(row4Spec.isGlobe)
     }
 
     @Test
-    fun languageToggleKeyWhenOptionEnabledInEnglishMode() {
-        val spec = createSwitchKeySpec(
+    fun row3IsShiftAndRow4IsLanguageToggleKeyWhenOptionEnabledInEnglishMode() {
+        val row3Spec = createRow3LeadingKeySpec(
             needsInputModeSwitchKey = true,
             globeAsLanguageKey = true,
             isEnglishMode = true
         )
-        requireNotNull(spec)
-        assertEquals("米", spec.label)
-        assertEquals(KeyAction.ToggleLanguage, spec.action)
-        assertFalse(spec.isGlobe)
+        assertEquals("⇧", row3Spec.label)
+        assertEquals(KeyAction.Shift, row3Spec.action)
+
+        val row4Spec = createRow4SwitchKeySpec(
+            needsInputModeSwitchKey = true,
+            globeAsLanguageKey = true,
+            isEnglishMode = true
+        )
+        requireNotNull(row4Spec)
+        assertEquals("米", row4Spec.label)
+        assertEquals(KeyAction.ToggleLanguage, row4Spec.action)
+        assertFalse(row4Spec.isGlobe)
     }
 }
