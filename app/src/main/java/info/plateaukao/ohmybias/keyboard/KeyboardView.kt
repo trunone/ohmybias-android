@@ -38,6 +38,12 @@ class KeyboardView(context: Context) : ViewGroup(context) {
             field = value
             reloadKeys()
         }
+    var isSameSoundMode = false
+        set(value) {
+            if (field == value) return
+            field = value
+            reloadKeys()
+        }
     var isShifted = false
     var needsInputModeSwitchKey = true
     /// Enter 鍵顯示文字（依 host app 的 imeOptions：搜尋/前往/送出…）
@@ -57,6 +63,8 @@ class KeyboardView(context: Context) : ViewGroup(context) {
     private var builtSkinGeneration = -1
     /// 建鍵時「中文模式大寫字母」偏好值 — 在設定頁改過後回鍵盤要重建鍵面
     private var builtUppercaseLetters = false
+    /// 建鍵時「地球鍵改為英/米切換鍵」偏好值
+    private var builtGlobeAsLanguageKey = false
     /// 上次排版採用的按鍵間距縮放 — 設定頁改過後回鍵盤要重排（鍵面尺寸會變）
     private var laidOutSpacingScale = -1f
 
@@ -102,6 +110,7 @@ class KeyboardView(context: Context) : ViewGroup(context) {
         if (needsInputModeSwitchKey == needsSwitchKey && returnKeyLabel == newReturnLabel &&
             builtSkinGeneration == SkinSettings.shared.generation &&
             builtUppercaseLetters == Prefs.uppercaseLettersInChinese &&
+            builtGlobeAsLanguageKey == Prefs.globeAsLanguageKey &&
             currentPage != PageKind.PHRASES  // 常用語可能在設定頁被改過 — 回鍵盤時重讀
         ) return
         needsInputModeSwitchKey = needsSwitchKey
@@ -141,6 +150,7 @@ class KeyboardView(context: Context) : ViewGroup(context) {
     fun reloadKeys() {
         builtSkinGeneration = SkinSettings.shared.generation
         builtUppercaseLetters = Prefs.uppercaseLettersInChinese
+        builtGlobeAsLanguageKey = Prefs.globeAsLanguageKey
         removeAllViews()
         keyButtons.clear()
         rowsOfButtons.clear()
@@ -422,12 +432,17 @@ class KeyboardView(context: Context) : ViewGroup(context) {
             swipeDown = swipeEntry(SwipeData.down[s], up = false),
             longPress = if (skin.longPressEnabled) LongPressData.letterMenu(s) else null,
         )
-        // 第三排前導鍵（sweetlime 版面）：中文模式＝「英」切換鍵（shift 位置）、英文模式＝shift
+        // 第三排前導鍵（sweetlime 版面）：中文模式＝「英」切換鍵（若開啟 🌐 切換則改為同音字「同/組」鍵）、英文模式＝shift
         val row3 = mutableListOf<KeySpec>()
         if (isEnglishMode) {
             row3.add(KeySpec(if (isShifted) "⬆" else "⇧", KeyAction.Shift, isSpecial = true))
         } else {
-            row3.add(KeySpec("英", KeyAction.ToggleLanguage, isSpecial = true))
+            if (Prefs.globeAsLanguageKey && needsInputModeSwitchKey) {
+                val label = if (isSameSoundMode) "組" else "同"
+                row3.add(KeySpec(label, KeyAction.EnterHomophone, isSpecial = true))
+            } else {
+                row3.add(KeySpec("英", KeyAction.ToggleLanguage, isSpecial = true))
+            }
         }
         row3 += r3.map(::key)
         row3.add(KeySpec("⌫", KeyAction.Backspace, widthMultiplier = 1.4f, isSpecial = true))
@@ -442,7 +457,11 @@ class KeyboardView(context: Context) : ViewGroup(context) {
             row4.add(KeySpec("123", KeyAction.Page(numericPage), isSpecial = true))
         }
         if (needsInputModeSwitchKey) {
-            row4.add(KeySpec("🌐", KeyAction.Globe, widthMultiplier = 1.0f, isSpecial = true, isGlobe = true))
+            if (Prefs.globeAsLanguageKey) {
+                row4.add(KeySpec(if (isEnglishMode) "米" else "英", KeyAction.ToggleLanguage, widthMultiplier = 1.0f, isSpecial = true))
+            } else {
+                row4.add(KeySpec("🌐", KeyAction.Globe, widthMultiplier = 1.0f, isSpecial = true, isGlobe = true))
+            }
         }
         row4.add(KeySpec(",", KeyAction.Letter(","),
             swipeUp = swipeEntry(SwipeData.up[","], up = true),
