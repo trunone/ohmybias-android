@@ -25,7 +25,6 @@ import android.widget.Switch
 import android.widget.TextView
 import info.plateaukao.ohmybias.android.Prefs
 import info.plateaukao.ohmybias.shared.AppEnv
-import info.plateaukao.ohmybias.shared.CINCompiler
 import info.plateaukao.ohmybias.shared.CINTable
 import info.plateaukao.ohmybias.shared.SkinSettings
 import org.json.JSONObject
@@ -35,15 +34,13 @@ import java.util.zip.ZipInputStream
 /// 鍵盤外觀編輯器網站（plateaukao/ohmybias-skin — 匯出 .cskin 後回本頁匯入）
 private const val SKIN_DESIGNER_URL = "https://plateaukao.github.io/ohmybias-skin/"
 
-/// 設定頁 — 對應 iOS ContentView：啟用鍵盤、匯入 liu.cin、皮膚、偏好 toggle、
+/// 設定頁 — 對應 iOS ContentView：啟用鍵盤、皮膚、偏好 toggle、
 /// 自訂詞編輯、指令速查；外加「測試輸入」欄位供模擬器驗證。
 class MainActivity : Activity() {
 
-    private val pickCinRequest = 1001
     private val pickSkinRequest = 1002
 
     private lateinit var tableStatus: TextView
-    private lateinit var importMessage: TextView
     private lateinit var skinStatus: TextView
     private lateinit var skinMessage: TextView
     private lateinit var toolbarStatus: TextView
@@ -72,16 +69,6 @@ class MainActivity : Activity() {
         root.addView(sectionTitle("字表"))
         tableStatus = footnote("")
         root.addView(tableStatus)
-        root.addView(buttonFlow(
-            "匯入 liu.cin" to {
-                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
-                intent.addCategory(Intent.CATEGORY_OPENABLE)
-                intent.type = "*/*"
-                startActivityForResult(intent, pickCinRequest)
-            },
-        ))
-        importMessage = statusFootnote()
-        root.addView(importMessage)
 
         // ── 主題 ──
         root.addView(sectionTitle("主題"))
@@ -538,50 +525,7 @@ class MainActivity : Activity() {
         if (resultCode != RESULT_OK) return
         val uri = data?.data ?: return
         when (requestCode) {
-            pickCinRequest -> handleCinImport(uri)
             pickSkinRequest -> handleSkinImport(uri)
-        }
-    }
-
-    /// liu.cin 動輒數 MB，來源又可能是雲端硬碟（下載時間不定）—— 複製＋編譯全放背景執行緒，
-    /// 免得主執行緒卡到 ANR。
-    private fun handleCinImport(uri: Uri) {
-        importMessage.text = "匯入中…"
-        Thread({
-            val message = importCin(uri)
-            runOnUiThread {
-                importMessage.text = message
-                refreshTableStatus()
-            }
-        }, "ohmybias-import").start()
-    }
-
-    /// 全程寫暫存檔、成功才 rename 就位：
-    /// - 中途失敗（來源讀到一半斷線、不是有效 .cin）不會動到現有字表；
-    /// - rename 不影響鍵盤已 mmap 的舊 liu.bin —— 舊 inode 活到它重載為止，
-    ///   不會讀到寫一半的內容，檔案變短也不會 SIGBUS。
-    private fun importCin(uri: Uri): String {
-        val cin = File(AppEnv.cinPath)
-        val bin = File(AppEnv.sharedDir, "liu.bin")
-        val cinTmp = File(cin.path + ".tmp")
-        val binTmp = File(bin.path + ".tmp")
-        try {
-            contentResolver.openInputStream(uri)?.use { input ->
-                cinTmp.outputStream().use { input.copyTo(it) }
-            } ?: return "讀取失敗"
-            val count = CINCompiler.compile(cinTmp.path, binTmp.path)
-            if (count <= 0) return "編譯失敗 — 請確認是有效的 .cin 檔"
-            // bin 是實際被查的檔，最後才就位 = 整個匯入的提交點
-            if (!cinTmp.renameTo(cin) || !binTmp.renameTo(bin)) return "寫入失敗 — 儲存空間可能不足"
-            CINTable.bumpGeneration()  // 鍵盤同 process — 下次進輸入框自動重載
-            // 字表到手就回嘸蝦米 — 匯入前打不出中文而切去的英文模式不該延續到有字表之後
-            // （onStartInput 每次都重讀 lastEnglishMode，下次進輸入框即生效）
-            Prefs.resetToChineseMode()
-            return "已編譯 $count 個字碼"
-        } catch (e: Exception) {
-            return "匯入失敗：${e.message}"
-        } finally {
-            cinTmp.delete(); binTmp.delete()
         }
     }
 
@@ -655,10 +599,10 @@ class MainActivity : Activity() {
         val table = CINTable()
         table.reload()
         tableStatus.text = if (table.isEmpty) {
-            "尚未匯入 liu.cin — 鍵盤無法輸出中文"
+            "字表載入失敗"
         } else {
-            val name = table.cinName.ifEmpty { "字表" }
-            "已載入：$name（最長碼 ${table.maxCodeLength}）"
+            val name = table.cinName.ifEmpty { "嘸蝦米" }
+            "內建字表：$name（最長碼 ${table.maxCodeLength}）"
         }
     }
 

@@ -1,6 +1,5 @@
 OhMyBias is a minimal Boshiamy (嘸蝦米) input method keyboard — fully offline, requests zero permissions, and has no ads or tracking.
 
-IMPORTANT: This app does NOT bundle the Boshiamy table. The Boshiamy input table (liu.cin) is copyrighted by Liu Hsing Ltd. (行易有限公司). Please import a legally obtained table file in the settings page; the app compiles it on-device and it never leaves your device.
 
 Features:
 • Boshiamy input: radical composition, candidate selection, adaptive frequency ranking
