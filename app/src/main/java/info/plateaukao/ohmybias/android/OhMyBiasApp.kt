@@ -29,7 +29,7 @@ class OhMyBiasApp : Application() {
     /// 不必每次啟動把六個資料檔全部讀進 heap 比對（取法 sweetlime 的延遲/一次性資料庫複製）
     private fun copyAssetsIfNeeded() {
         val names = listOf(
-            "phrases.bin", "zhuyin_data.bin", "pinyin_data.bin",
+            "liu.bin", "phrases.bin", "zhuyin_data.bin", "pinyin_data.bin",
             "char_freq.bin", "t2s.json", "s2t.json",
             "default_skin.json",   // 內建預設主題 — SkinSettings 未匯入時的 fallback
         )

@@ -61,50 +61,6 @@ class CINCompilerTest {
         }
     }
 
-    /// 已編好的舊 .bin（格式版本 0）位移只有 u16，升級後仍舊是錯字。使用者不該為了
-    /// 拿到修正而重新匯入一次 —— reload() 認出舊格式就該拿留著的 liu.cin 自動重編。
-    @Test
-    fun staleBinIsRecompiledOnReload() {
-        val entries = 800
-        val cin = writeCin(entries, charsPer = 100)
-        val shared = File(AppEnv.sharedDir)
-        val bin = File(shared, "liu.bin")
-        val last = entries - 1
-        try {
-            // 先編一份正常的 .bin，再改造成舊格式：格式版本抹 0，且 val index 每筆的
-            // 第 4 byte（位移高位元組）歸零 —— 這正是舊編譯器的產物，尾端字碼會讀錯。
-            assertTrue(CINCompiler.compile(cin.path, bin.path) > 0)
-            val bytes = bin.readBytes()
-            fun u32(off: Int) = (bytes[off].toInt() and 0xFF) or ((bytes[off + 1].toInt() and 0xFF) shl 8) or
-                ((bytes[off + 2].toInt() and 0xFF) shl 16) or ((bytes[off + 3].toInt() and 0xFF) shl 24)
-            val count = u32(4)
-            val valsOff = u32(100)
-            for (i in 0 until count) bytes[valsOff + i * 4 + 3] = 0
-            for (i in 88..91) bytes[i] = 0
-            bin.writeBytes(bytes)
-
-            // 沒有 liu.cin 可重編時就照舊檔用 —— 先確認這份舊檔真的是壞的（否則等於沒測）
-            File(AppEnv.cinPath).delete()
-            val stale = CINTable()
-            stale.reload()
-            assertTrue(
-                "改造後的舊格式 .bin 尾端本來就該是錯的",
-                stale.lookup(codeFor(last)) != charsFor(last, 100),
-            )
-
-            // 手上還留著 liu.cin → reload() 應認出舊格式並自動重編
-            cin.copyTo(File(AppEnv.cinPath), overwrite = true)
-            val fixed = CINTable()
-            fixed.reload()
-            assertEquals(
-                "舊格式 .bin 應被自動重編，尾端字碼才會正確",
-                charsFor(last, 100), fixed.lookup(codeFor(last)),
-            )
-            assertEquals("重編後應標上新版格式", CINCompiler.FORMAT_VERSION, bin.readBytes()[88].toInt())
-        } finally {
-            cin.delete(); bin.delete(); File(AppEnv.cinPath).delete()
-        }
-    }
 
     /// 反查表（查碼提示／注音同音字）走同一條 readChars —— 尾端也不能讀到錯字
     @Test

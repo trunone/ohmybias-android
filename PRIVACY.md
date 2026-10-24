@@ -10,7 +10,7 @@
 OhMyBias 米**不收集、不儲存、不傳輸任何個人資料**。
 
 - 本 App **不要求任何 Android 權限**，包括網路權限 — 技術上不可能上傳任何資料。
-- 你輸入的所有文字、匯入的字表（liu.cin）、自訂詞與皮膚設定，
+- 你輸入的所有文字、自訂詞、固定排序與皮膚設定，
   全部只存在你裝置上的 App 私有目錄，絕不離開裝置。
 - 沒有廣告、沒有追蹤、沒有任何第三方 SDK。
 - 鍵盤啟用時 Android 系統會顯示「可能收集輸入內容」的標準警告 —
@@ -28,7 +28,7 @@ OhMyBias **collects, stores, and transmits no personal data whatsoever**.
 
 - The app requests **no Android permissions at all** — including network access,
   making it technically impossible to upload anything.
-- Everything you type, the input table you import (liu.cin), your custom
+- Everything you type, your custom
   phrases, frequency statistics, and skin settings live only in the app's
   private directory on your device and never leave it.
 - No ads, no tracking, no third-party SDKs.

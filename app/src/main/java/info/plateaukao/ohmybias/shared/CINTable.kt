@@ -4,21 +4,14 @@ import org.json.JSONObject
 import java.io.File
 import java.util.UUID
 
-/// 統一 CIN 字表 — mmap 二進位（CINM，經 CINCompiler）＋ .cin 文字 fallback。
-/// 二進位路徑：liu.bin 以 mmap 載入（零複製）；文字路徑：解析 .cin 進 overlay dict。
+/// 嘸蝦米二進位字表（CINM 格式）— 以 mmap 載入（零複製）。
 ///
 /// 執行緒安全：字表狀態全收在 [Snap] 裡，載入端在區域變數上組好一整份才發佈
 /// （@Volatile 單次指派），讀取端一開始就把 snap 抓成區域變數、之後只讀那一份。
-/// 舊版是「reload() 就地把 binData/entryCount/overlay 清成空再重填」，而背景預熱執行緒
-/// 同時在走同一批欄位 —— 讀到 binData 還在、entryCount 已歸零（或位移是新表的、buffer
-/// 是舊表的）就會拿到錯字甚至 IndexOutOfBounds，overlay 邊填邊走則是
-/// ConcurrentModificationException。（macOS 版走同一條路徑會寫壞 malloc freelist 而
-/// SIGTRAP，表現為切輸入法靜默失敗。）
 class CINTable {
 
     companion object {
-        /// 字表世代 —— 設定頁匯入新 liu.cin 後 +1。鍵盤與設定頁同 process，
-        /// service 據此在下次進輸入框時重載（同 SkinSettings.generation 的做法）。
+        /// 字表世代 —— 鍵盤與設定頁同 process，service 據此在重載時識別世代。
         @Volatile
         var generation: Int = 0
             private set
@@ -366,55 +359,41 @@ class CINTable {
     fun reload() {
         val s = Snap()
 
-        // 1. sharedDir 的 mmap 二進位
+        // 1. sharedDir 的 mmap 二進位（liu.bin）
         val userBin = AppEnv.sharedDir + "/liu.bin"
         if (File(userBin).exists()) loadBin(userBin, s)
-        // 1b. 舊版編譯器產出的 .bin（格式版本 0）位移只有 u16，大字表尾端讀出來是錯字。
-        //     使用者不該為了拿到修正而重新匯入一次 — 手上還有 liu.cin 就直接重編。
-        if (s.entryCount > 0 && s.binFormatVersion < CINCompiler.FORMAT_VERSION &&
-            File(AppEnv.cinPath).exists()
-        ) {
-            // 編到暫存檔、成功才換掉 — 重編失敗就沿用舊檔（字是舊的錯法，但還能打）
-            val tmp = File("$userBin.tmp")
-            if (CINCompiler.compile(AppEnv.cinPath, tmp.path) > 0 && tmp.renameTo(File(userBin))) {
-                s.binData = null; s.entryCount = 0
-                loadBin(userBin, s)
-            }
-            tmp.delete()
-        }
-        // 2. 無 .bin → 嘗試現場編譯 .cin → .bin
-        if (s.entryCount == 0) {
-            val cinPath = AppEnv.cinPath
-            if (File(cinPath).exists()) {
-                CINCompiler.compile(cinPath, userBin)
-                if (File(userBin).exists()) loadBin(userBin, s)
-                // 編譯失敗 → 文字 fallback
-                if (s.entryCount == 0) parseCINIntoOverlay(cinPath, s)
-            }
-        }
-        // 3. Extras
+
+        // 2. Extras
         loadExtras(s)
-        // 4. 簡繁對照表
+        // 3. 簡繁對照表
         loadCharMaps(s)
-        // 5. 常用語自訂組字碼
+        // 4. 常用語自訂組字碼
         s.shortcuts = UserPhrases.shared.shortcuts
-        // 6. maxCodeLength
+        // 5. maxCodeLength
         recomputeMaxCodeLength(s)
 
         publish(s)
     }
 
-    /// 從 .cin 文字檔載入（先編到暫存 .bin）— 測試與現場使用。
+    /// 從 .bin 二進位檔載入 — 測試與特化需求
+    fun loadBinFile(binPath: String) {
+        val s = Snap()
+        if (File(binPath).exists()) loadBin(binPath, s)
+        s.shortcuts = UserPhrases.shared.shortcuts
+        recomputeMaxCodeLength(s)
+        publish(s)
+    }
+
+    /// 從 .cin 文字檔編譯並載入 — 測試輔助
     fun load(cinPath: String) {
         val s = Snap()
-        val tmp = System.getProperty("java.io.tmpdir") + "/cin_" + UUID.randomUUID() + ".bin"
+        val tmp = (System.getProperty("java.io.tmpdir") ?: "/tmp") + "/cin_" + UUID.randomUUID() + ".bin"
         CINCompiler.compile(cinPath, tmp)
         val f = File(tmp)
         if (f.exists()) {
             BinData.of(f)?.let { parseBinData(it, s) }
             f.delete()
         }
-        if (s.entryCount == 0) parseCINIntoOverlay(cinPath, s)
         s.shortcuts = UserPhrases.shared.shortcuts
         recomputeMaxCodeLength(s)
         publish(s)
@@ -463,39 +442,6 @@ class CINTable {
         s.binData = d
     }
 
-    // MARK: - 文字 CIN 解析（fallback + overlay）
-
-    private fun parseCINIntoOverlay(path: String, s: Snap) {
-        val f = File(path)
-        // 檔案大小限制
-        if (!f.exists()) return
-        if (f.length() > 100_000_000L) {
-            return
-        }
-        val content = try { f.readText(Charsets.UTF_8) } catch (e: Exception) { return }
-        var inChardef = false
-        var lineCount = 0
-        val maxLines = 500_000
-        for (line in content.lineSequence()) {
-            lineCount += 1
-            if (lineCount > maxLines) break
-            val t = line.trim()
-            if (t.startsWith("%selkey ")) {
-                val keys = t.substring(8).trim()
-                if (keys.isNotEmpty()) s.selKeys = keys.toList()
-                continue
-            }
-            if (t.startsWith("%cname ")) { s.cinName = t.substring(7).trim(); continue }
-            if (t == "%chardef begin") { inChardef = true; continue }
-            if (t == "%chardef end") { inChardef = false; continue }
-            if (!inChardef) continue
-            val parts = if (t.contains("\t")) t.split("\t", limit = 2) else t.split(" ", limit = 2)
-            if (parts.size != 2) continue
-            val code = parts[0].lowercase()
-            val value = parts[1].trim()
-            s.overlay.getOrPut(code) { mutableListOf() }.add(value)
-        }
-    }
 
     // MARK: - Extras + 簡繁對照
 

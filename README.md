@@ -16,7 +16,7 @@ Android 嘸蝦米（Boshiamy）鍵盤 — [ohmybias-ios](https://github.com/plat
 
 ### 輸入引擎
 
-- **嘸蝦米輸入**：匯入自己的 `liu.cin`，on-device 編譯 mmap 零拷貝載入（CINM 格式與 iOS 版相同，檔案可互通）
+- **嘸蝦米輸入**：內建嘸蝦米二進位字表（`liu.bin`，由 [cin-tables](https://github.com/chinese-opendesktop/cin-tables) 的 `boshiamy.cin` 編譯，採用 CINM 高效 mmap 格式內嵌）
 - **基本聯想詞**：commit 後即出現詞組聯想（萌典詞組，CC0，僅 687KB）＋自訂詞（user_phrases.txt）；聯想列開頭有 ✕ 可一鍵關閉
 - **`,,` 指令**：`,,T/S/J` 切模式、`,,ZH` 注音查碼、`,,TO` 同音字、`,,PYS/PYT` 拼音查碼、`,,SG` 聯想開關、`,,PIN` 固定同碼字排序、`,,V/VT/VS` 剪貼簿（ICU 簡繁轉換）、`,,H` 說明
 - **極簡資料**：不含專業詞典／語料 binary（<2MB）
@@ -35,10 +35,7 @@ Android 嘸蝦米（Boshiamy）鍵盤 — [ohmybias-ios](https://github.com/plat
 ## 安裝
 
 1. `./gradlew assembleDebug` 後安裝 `app/build/outputs/apk/debug/app-debug.apk`
-2. 開 OhMyBias 米 app → 匯入 `liu.cin`
-3. 系統設定 → 螢幕鍵盤 → 啟用「OhMyBias 米」，並切換為目前輸入法
-
-> ⚠️ `liu.cin` 為行易公司版權字表，請自備，本專案不含亦不得散布。
+2. 系統設定 → 螢幕鍵盤 → 啟用「OhMyBias 米」，並切換為目前輸入法
 
 ## 開發
 
@@ -55,15 +52,39 @@ app/src/main/java/info/plateaukao/ohmybias/
   keyboard/    # IME service、鍵盤五頁、候選列、面板、主題、手勢
   android/     # SharedPreferences、剪貼簿（ICU）、Application
   MainActivity # 設定頁（匯入字表/皮膚、偏好、自訂詞、測試輸入）
-app/src/main/assets/   # phrases.bin（萌典）、s2t/t2s、zhuyin/pinyin/char_freq（mmap 二進位）
+app/src/main/assets/   # liu.bin（嘸蝦米）、phrases.bin（萌典）、s2t/t2s、zhuyin/pinyin/char_freq（mmap 二進位）
 tools/                 # 資料檔產生腳本（JSON → mmap 二進位）
 app/src/test/          # JUnit 引擎測試（移植自 iOS Tests/）
 ```
+
+## 嘸蝦米字表二進位格式 (CINM)
+
+本 App 將 `boshiamy.cin` 文字表格預先編譯為 CINM 二進位格式檔（`liu.bin`），透過 memory-mapped file (mmap) 實現零拷貝、極速載入與 $O(\log N)$ 查詢。
+
+### 檔案結構 (128-byte Header + 3 區塊)
+- **Header（128 bytes）**：
+  - `+0` (4 bytes ASCII): Magic `"CINM"`
+  - `+4` (u32 LE): 條目總數 $N$
+  - `+8` (u8): 選字鍵長度 $K$（如 `1234567890`）
+  - `+9` ($K$ bytes ASCII): 選字鍵字元
+  - `+20` (u16 LE): 字表名稱長度
+  - `+22` (UTF-8): 字表名稱（`cname`）
+  - `+88` (u32 LE): 格式版本（1）
+  - `+96` / `+100` / `+104` / `+108` (u32 LE): `codesOff`, `valsOff`, `stringsOff`, `charsOff` 位移
+- **Code Index 區 ($N \times 6$ bytes)**：每筆存 `u32 LE` 位移（於 Strings 區）與 `u16 LE` 字碼長度。條目按 ASCII 字典序排序。
+- **Val Index 區 ($N \times 4$ bytes)**：每筆存 `u16 LE` 低 16 位位移、`u8` 字數 $C$、`u8` 高 8 位位移（組合為 u24 位移，於 Chars 區）。
+- **Strings 區**：ASCII 鍵字串串接。
+- **Chars 區**：UTF-32 LE Unicode Code Points 陣列。
+
+### 查詢演算法
+1. **字碼搜尋**：對 Code Index 區進行二分搜尋（Binary Search），以 ASCII 序比對 Strings 區的字碼。
+2. **候選字讀取**：命中後由 Val Index 區取得 24-bit 偏移量與字數 $C$，直接從 Chars 區以 4-byte 步進讀出對應的 UTF-32 Code Point。
 
 ## 資料來源與授權
 
 | 檔案 | 來源 | 授權 |
 |------|------|------|
+| `liu.bin` | [cin-tables (boshiamy.cin)](https://github.com/chinese-opendesktop/cin-tables) | Free for non-commercial use |
 | `phrases.bin` | [萌典](https://www.moedict.tw/)（教育部國語辭典） | CC0 |
 | `zhuyin_data.bin` / `pinyin_data.bin` / `char_freq.bin` | Yabomish 上游整理（tools/gen_data_bins.py 轉製） | 同上游 |
 | `s2t.json` / `t2s.json` | Yabomish 上游整理 | 同上游 |
