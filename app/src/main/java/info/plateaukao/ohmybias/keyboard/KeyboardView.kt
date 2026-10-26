@@ -311,7 +311,10 @@ class KeyboardView(context: Context) : ViewGroup(context) {
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 val target = nearestKey(event.x, event.y) ?: return false
-                if (target.visibility != View.VISIBLE) return false
+                if (target.visibility != View.VISIBLE) {
+                    gapTouchTarget = null
+                    return true
+                }
                 gapTouchTarget = target
                 forwardTouch(target, event)
                 return true
@@ -337,7 +340,6 @@ class KeyboardView(context: Context) : ViewGroup(context) {
         var best: KeyButton? = null
         var bestDist = Float.MAX_VALUE
         for (b1 in keyButtons) {
-            if (b1.visibility != View.VISIBLE) continue
             val dx = max(max(b1.left - x, 0f), x - b1.right)
             val dy = max(max(b1.top - y, 0f), y - b1.bottom)
             val d = dx * dx + dy * dy
